@@ -1,10 +1,10 @@
 ---
-title: Gh Issue Search
+title: Github Issue Search
 emoji: 🐠
 colorFrom: green
 colorTo: purple
-sdk: gradio
-sdk_version: 3.40.0
+sdk: streamlit
+sdk_version: 1.25.0
 app_file: app.py
 pinned: false
 license: mit

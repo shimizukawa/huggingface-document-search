@@ -1,0 +1,10 @@
+langchain
+tiktoken
+qdrant-client
+torch
+transformers
+accelerate
+bitsandbytes
+sentence_transformers
+streamlit
+python-dateutil
