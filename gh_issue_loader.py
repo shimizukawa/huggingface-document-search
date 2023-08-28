@@ -27,17 +27,22 @@ def get_contents(repo_name: str, filename: str) -> Iterator[tuple[Issue, str]]:
     with open(filename, "r") as f:
         obj = [json.loads(line) for line in f]
     for data in obj:
+        title = data["title"]
+        body = data["body"]
         issue = Issue(
             repo_name=repo_name,
             id=data["number"],
-            title=data["title"],
+            title=title,
             created_at=date_to_int(data["created_at"]),
             user=data["user.login"],
             url=data["html_url"],
             labels=data["labels_"],
             type_="issue",
         )
-        yield issue, data["body"]
+        text = title
+        if body:
+            text += "\n\n" + body
+        yield issue, text
         comments = data["comments_"]
         for comment in comments:
             issue = Issue(

@@ -1,13 +1,13 @@
 import os
 
 
-SAAS = False
+SAAS = True
 
 
 def get_db_config():
     url = os.environ["QDRANT_URL"]
     api_key = os.environ["QDRANT_API_KEY"]
-    collection_name = "gh-issues"
+    collection_name = "gh-issue-search"
     return url, api_key, collection_name
 
 
