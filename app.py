@@ -51,10 +51,14 @@ def get_similay(query: str, filter: Filter):
 def main(
     query: str,
     repo_name: str,
+    query_options: str,
 ) -> Iterable[tuple[str, tuple[str, str]]]:
     options = [{"key": "metadata.repo_name", "value": repo_name}]
+    if query_options == "Empty":
+        query_options = ""
+    query_str = f"{query_options}{query}"
     filter = make_filter_obj(options=options)
-    docs = get_similay(query, filter)
+    docs = get_similay(query_str, filter)
     for doc, score in docs:
         text = doc.page_content
         metadata = doc.metadata
@@ -70,7 +74,25 @@ with st.form("my_form"):
     st.title("GitHub Issue Search")
     query = st.text_input(label="query")
     repo_name = st.radio(
-        options=["cocoa", "plone", "volto", "plone.restapi"], label="Repo name"
+        options=[
+            "cpython",
+            "pyvista",
+            "plone",
+            "volto",
+            "plone.restapi",
+            "nvda",
+            "nvdajp",
+            "cocoa",
+        ],
+        label="Repo name",
+    )
+    query_options = st.radio(
+        options=[
+            "query: ",
+            "query: passage: ",
+            "Empty",
+        ],
+        label="Query options",
     )
 
     submitted = st.form_submit_button("Submit")
@@ -79,7 +101,7 @@ with st.form("my_form"):
         st.header("Search Results")
         st.divider()
         with st.spinner("Searching..."):
-            results = main(query, repo_name)
+            results = main(query, repo_name, query_options)
             for title, url, id_, text, score, is_comment in results:
                 with st.container():
                     if not is_comment:
