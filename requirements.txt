@@ -8,3 +8,4 @@ bitsandbytes
 sentence_transformers
 streamlit
 python-dateutil
+openai
