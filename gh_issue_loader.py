@@ -1,21 +1,10 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
 import json
 from typing import Iterator
 from dateutil.parser import parse
 from langchain.docstore.document import Document
 from langchain.document_loaders.base import BaseLoader
-
-
-@dataclass
-class Issue:
-    repo_name: str
-    id: int
-    title: str
-    created_at: int
-    user: str
-    url: str
-    labels: list[str]
-    type_: str
+from gh_issue_loader import Issue
 
 
 def date_to_int(dt_str: str) -> int:
