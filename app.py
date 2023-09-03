@@ -3,6 +3,8 @@ from datetime import datetime, date, timedelta
 from typing import Iterable
 import streamlit as st
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+from langchain.llms import HuggingFacePipeline
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Qdrant
 from qdrant_client import QdrantClient
@@ -33,8 +35,44 @@ def llm_model(model="gpt-3.5-turbo", temperature=0.2):
     return llm
 
 
+@st.cache_resource
+def load_vicuna_model():
+    if torch.cuda.is_available():
+        model_name = "lmsys/vicuna-13b-v1.5"
+        tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=False)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            load_in_8bit=True,
+            torch_dtype=torch.float16,
+            device_map="auto",
+        )
+        return tokenizer, model
+    else:
+        return None, None
+
+
 EMBEDDINGS = load_embeddings()
 LLM = llm_model()
+VICUNA_TOKENIZER, VICUNA_MODEL = load_vicuna_model()
+
+
+@st.cache_resource
+def _get_vicuna_llm(temperature=0.2) -> HuggingFacePipeline | None:
+    if VICUNA_MODEL is not None:
+        pipe = pipeline(
+            "text-generation",
+            model=VICUNA_MODEL,
+            tokenizer=VICUNA_TOKENIZER,
+            max_new_tokens=1024,
+            temperature=temperature,
+        )
+        llm = HuggingFacePipeline(pipeline=pipe)
+    else:
+        llm = None
+    return llm
+
+
+VICUNA_LLM = _get_vicuna_llm()
 
 
 def make_filter_obj(options: list[dict[str]]):
@@ -78,7 +116,7 @@ def get_similay(query: str, filter: Filter):
     return docs
 
 
-def get_retrieval_qa(filter: Filter):
+def get_retrieval_qa(filter: Filter, llm):
     db_url, db_api_key, db_collection_name = DB_CONFIG
     client = QdrantClient(url=db_url, api_key=db_api_key)
     db = Qdrant(
@@ -90,7 +128,7 @@ def get_retrieval_qa(filter: Filter):
         }
     )
     result = RetrievalQA.from_chain_type(
-        llm=LLM,
+        llm=llm,
         chain_type="stuff",
         retriever=retriever,
         return_source_documents=True,
@@ -143,6 +181,7 @@ def _get_query_str_filter(
 
 
 def run_qa(
+    llm,
     query: str,
     repo_name: str,
     query_options: str,
@@ -154,7 +193,7 @@ def run_qa(
     query_str, filter = _get_query_str_filter(
         query, repo_name, query_options, start_date, end_date, include_comments
     )
-    qa = get_retrieval_qa(filter)
+    qa = get_retrieval_qa(filter, llm)
     try:
         result = qa(query_str)
     except InvalidRequestError as e:
@@ -271,10 +310,37 @@ with st.form("my_form"):
         st.divider()
         with st.spinner("QA Searching..."):
             results = run_qa(
-                query, repo_name, query_options, start_date, end_date, include_comments
+                LLM,
+                query,
+                repo_name,
+                query_options,
+                start_date,
+                end_date,
+                include_comments,
             )
             answer, html = results
             with st.container():
                 st.write(answer)
                 st.markdown(html, unsafe_allow_html=True)
                 st.divider()
+    if torch.cuda.is_available():
+        qa_searched_vicuna = submit_col2.form_submit_button("QA Search by Vicuna")
+        if qa_searched_vicuna:
+            st.divider()
+            st.header("QA Search Results by Vicuna-13b-v1.5")
+            st.divider()
+            with st.spinner("QA Searching..."):
+                results = run_qa(
+                    VICUNA_LLM,
+                    query,
+                    repo_name,
+                    query_options,
+                    start_date,
+                    end_date,
+                    include_comments,
+                )
+                answer, html = results
+                with st.container():
+                    st.write(answer)
+                    st.markdown(html, unsafe_allow_html=True)
+                    st.divider()
