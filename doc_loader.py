@@ -16,19 +16,20 @@ def date_to_int(dt_str: str) -> int:
 def get_contents(project_name: str, filename: str) -> Iterator[tuple[Doc, str]]:
     """filename for file with ndjson
 
-        {"title": <page title>, "body": <page body>, "id": <page_id>, "ctime": ..., "user": <name>, "url": "https:..."}
+        {"id": <page_id>, "title": <page title>, "content": <page body>, "ctime": ..., "user": <name>, "url": "https:..."}
         {"title": ...}
     """
     with open(filename, "r") as f:
         obj = [json.loads(line) for line in f]
     for data in obj:
         title = data["title"]
-        body = data["body"]
+        body = data["content"]
+        ctime = date_to_int(data["ctime"]) if isinstance(data["ctime"], str) else data["ctime"]
         doc = Doc(
             project_name=project_name,
             id=data["id"],
             title=title,
-            created_at=date_to_int(data["ctime"]),
+            ctime=ctime,
             user=data["user"],
             url=data["url"],
         )

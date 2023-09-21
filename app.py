@@ -143,9 +143,9 @@ def _get_related_url(metadata) -> Iterable[str]:
         if url in urls:
             continue
         urls.add(url)
-        created_at = datetime.fromtimestamp(m["created_at"])
+        ctime = datetime.fromtimestamp(m["ctime"])
         # print(m)
-        yield f'<p>URL: <a href="{url}">{url}</a> (created: {created_at:%Y-%m-%d})</p>'
+        yield f'<p>URL: <a href="{url}">{url}</a> (created: {ctime:%Y-%m-%d})</p>'
 
 
 def _get_query_str_filter(

@@ -1,3 +1,5 @@
+from tqdm import tqdm
+import torch
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Qdrant
@@ -19,7 +21,7 @@ def get_text_chunk(docs):
 
 def store(texts):
     model_name = "intfloat/multilingual-e5-large"
-    model_kwargs = {"device": "cuda"}
+    model_kwargs = {"device": "cuda:0" if torch.cuda.is_available() else "cpu"}
     encode_kwargs = {"normalize_embeddings": False}
     embeddings = HuggingFaceEmbeddings(
         model_name=model_name,
@@ -27,13 +29,14 @@ def store(texts):
         encode_kwargs=encode_kwargs,
     )
     db_url, db_api_key, db_collection_name = DB_CONFIG
-    _ = Qdrant.from_documents(
-        texts,
-        embeddings,
-        url=db_url,
-        api_key=db_api_key,
-        collection_name=db_collection_name,
-    )
+    for text in tqdm(texts):
+        _ = Qdrant.from_documents(
+            [text],
+            embeddings,
+            url=db_url,
+            api_key=db_api_key,
+            collection_name=db_collection_name,
+        )
 
 
 def main(project_name: str, path: str) -> None:
@@ -52,7 +55,7 @@ if __name__ == "__main__":
 
     args = sys.argv
     if len(args) != 3:
-        print("No args, you need two args for repo_name, json_file_path")
+        print("No args, you need two args for project_name, json_file_path")
     else:
         project_name = args[1]
         path = args[2]
