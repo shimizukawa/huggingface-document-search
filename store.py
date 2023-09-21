@@ -2,7 +2,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Qdrant
 
-from gh_issue_loader import GHLoader
+from doc_loader import DocLoader
 from config import DB_CONFIG
 
 
@@ -36,8 +36,8 @@ def store(texts):
     )
 
 
-def main(repo_name: str, path: str) -> None:
-    loader = GHLoader(repo_name, path)
+def main(project_name: str, path: str) -> None:
+    loader = DocLoader(project_name, path)
     docs = loader.load()
     texts = get_text_chunk(docs)
     store(texts)
@@ -45,8 +45,8 @@ def main(repo_name: str, path: str) -> None:
 
 if __name__ == "__main__":
     """
-    $ python store.py "REPO_NAME" "FILE_PATH"
-    $ python store.py cocoa data/cocoa-issues.json
+    $ python store.py "PROJECT_NAME" "FILE_PATH"
+    $ python store.py hoge data/hoge-docs.json
     """
     import sys
 
@@ -54,6 +54,6 @@ if __name__ == "__main__":
     if len(args) != 3:
         print("No args, you need two args for repo_name, json_file_path")
     else:
-        repo_name = args[1]
+        project_name = args[1]
         path = args[2]
-        main(repo_name, path)
+        main(project_name, path)

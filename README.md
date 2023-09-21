@@ -1,5 +1,5 @@
 ---
-title: Github Issue Search
+title: Document Search
 emoji: 🐠
 colorFrom: green
 colorTo: purple

@@ -7,14 +7,14 @@ SAAS = True
 def get_db_config():
     url = os.environ["QDRANT_URL"]
     api_key = os.environ["QDRANT_API_KEY"]
-    collection_name = "gh-issue-search"
+    collection_name = "document-search"
     return url, api_key, collection_name
 
 
 def get_local_db_congin():
     url = "localhost"
     # api_key = os.environ["QDRANT_API_KEY"]
-    collection_name = "gh-issues"
+    collection_name = "document-search"
     return url, None, collection_name
 
 

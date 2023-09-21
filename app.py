@@ -1,5 +1,5 @@
 from time import time
-from datetime import datetime, date, timedelta
+from datetime import datetime
 from typing import Iterable
 import streamlit as st
 import torch
@@ -13,7 +13,7 @@ from langchain.chains import RetrievalQA
 from openai.error import InvalidRequestError
 from langchain.chat_models import ChatOpenAI
 from config import DB_CONFIG
-from model import Issue
+from model import Doc
 
 
 @st.cache_resource
@@ -108,12 +108,12 @@ def get_similay(query: str, filter: Filter):
     db = Qdrant(
         client=client, collection_name=db_collection_name, embeddings=EMBEDDINGS
     )
-    docs = db.similarity_search_with_score(
+    qdocs = db.similarity_search_with_score(
         query,
         k=20,
         filter=filter,
     )
-    return docs
+    return qdocs
 
 
 def get_retrieval_qa(filter: Filter, llm):
@@ -150,49 +150,20 @@ def _get_related_url(metadata) -> Iterable[str]:
 
 def _get_query_str_filter(
     query: str,
-    repo_name: str,
-    query_options: str,
-    start_date: date,
-    end_date: date,
-    include_comments: bool,
+    project_name: str,
 ) -> tuple[str, Filter]:
-    options = [{"key": "metadata.repo_name", "value": repo_name}]
-    if start_date is not None and end_date is not None:
-        options.append(
-            {
-                "key": "metadata.created_at",
-                "range": {
-                    "gte": int(datetime.fromisoformat(str(start_date)).timestamp()),
-                    "lte": int(
-                        datetime.fromisoformat(
-                            str(end_date + timedelta(days=1))
-                        ).timestamp()
-                    ),
-                },
-            }
-        )
-    if not include_comments:
-        options.append({"key": "metadata.type_", "value": "issue"})
+    options = [{"key": "metadata.project_name", "value": project_name}]
     filter = make_filter_obj(options=options)
-    if query_options == "Empty":
-        query_options = ""
-    query_str = f"{query_options}{query}"
-    return query_str, filter
+    return query, filter
 
 
 def run_qa(
     llm,
     query: str,
-    repo_name: str,
-    query_options: str,
-    start_date: date,
-    end_date: date,
-    include_comments: bool,
+    project_name: str,
 ) -> tuple[str, str]:
     now = time()
-    query_str, filter = _get_query_str_filter(
-        query, repo_name, query_options, start_date, end_date, include_comments
-    )
+    query_str, filter = _get_query_str_filter(query, project_name)
     qa = get_retrieval_qa(filter, llm)
     try:
         result = qa(query_str)
@@ -207,71 +178,29 @@ def run_qa(
 
 def run_search(
     query: str,
-    repo_name: str,
-    query_options: str,
-    start_date: date,
-    end_date: date,
-    include_comments: bool,
-) -> Iterable[tuple[Issue, float, str]]:
-    query_str, filter = _get_query_str_filter(
-        query, repo_name, query_options, start_date, end_date, include_comments
-    )
-    docs = get_similay(query_str, filter)
-    for doc, score in docs:
-        text = doc.page_content
-        metadata = doc.metadata
+    project_name: str,
+) -> Iterable[tuple[Doc, float, str]]:
+    query_str, filter = _get_query_str_filter(query, project_name)
+    qdocs = get_similay(query_str, filter)
+    for qdoc, score in qdocs:
+        text = qdoc.page_content
+        metadata = qdoc.metadata
         # print(metadata)
-        issue = Issue(
-            repo_name=repo_name,
+        doc = Doc(
+            project_name=project_name,
             id=metadata.get("id"),
             title=metadata.get("title"),
-            created_at=metadata.get("created_at"),
+            ctime=metadata.get("ctime"),
             user=metadata.get("user"),
             url=metadata.get("url"),
-            labels=metadata.get("labels"),
-            type_=metadata.get("type_"),
         )
-        yield issue, score, text
+        yield doc, score, text
 
 
 with st.form("my_form"):
-    st.title("GitHub Issue Search")
+    st.title("Document Search")
     query = st.text_input(label="query")
-    repo_name = st.radio(
-        options=[
-            "cpython",
-            "pyvista",
-            "plone",
-            "volto",
-            "plone.restapi",
-            "nvda",
-            "nvdajp",
-            "cocoa",
-        ],
-        label="Repo name",
-    )
-    query_options = st.radio(
-        options=[
-            "query: ",
-            "query: passage: ",
-            "Empty",
-        ],
-        label="Query options",
-    )
-    date_min = date(2022, 1, 1)
-    date_max = date.today()
-    date_col1, date_col2 = st.columns(2)
-    start_date = date_col1.date_input(
-        label="Select a start date",
-        value=date_min,
-        format="YYYY-MM-DD",
-    )
-    end_date = date_col2.date_input(
-        label="Select a end date",
-        value=date_max,
-        format="YYYY-MM-DD",
-    )
-    include_comments = st.checkbox(label="Include Issue comments", value=True)
+    project_name = st.text_input(label="project")
 
     submit_col1, submit_col2 = st.columns(2)
     searched = submit_col1.form_submit_button("Search")
@@ -280,28 +209,19 @@ with st.form("my_form"):
         st.header("Search Results")
         st.divider()
         with st.spinner("Searching..."):
-            results = run_search(
-                query, repo_name, query_options, start_date, end_date, include_comments
-            )
-            for issue, score, text in results:
-                title = issue.title
-                url = issue.url
-                id_ = issue.id
+            results = run_search(query, project_name)
+            for doc, score, text in results:
+                title = doc.title
+                url = doc.url
+                id_ = doc.id
                 score = round(score, 3)
-                created_at = datetime.fromtimestamp(issue.created_at)
-                user = issue.user
-                labels = issue.labels
-                is_comment = issue.type_ == "comment"
+                ctime = datetime.fromtimestamp(doc.ctime)
+                user = doc.user
                 with st.container():
-                    if not is_comment:
-                        st.subheader(f"#{id_} - {title}")
-                    else:
-                        st.subheader(f"comment with {title}")
+                    st.subheader(f"#{id_} - {title}")
                     st.write(url)
                     st.write(text)
-                    st.write("score:", score, "Date:", created_at.date(), "User:", user)
-                    st.write(f"{labels=}")
-                    # st.markdown(html, unsafe_allow_html=True)
+                    st.write("score:", score, "Date:", ctime.date(), "User:", user)
                     st.divider()
     qa_searched = submit_col2.form_submit_button("QA Search by OpenAI")
     if qa_searched:
@@ -312,11 +232,7 @@ with st.form("my_form"):
             results = run_qa(
                 LLM,
                 query,
-                repo_name,
-                query_options,
-                start_date,
-                end_date,
-                include_comments,
+                project_name,
             )
             answer, html = results
             with st.container():
@@ -333,11 +249,7 @@ with st.form("my_form"):
                 results = run_qa(
                     VICUNA_LLM,
                     query,
-                    repo_name,
-                    query_options,
-                    start_date,
-                    end_date,
-                    include_comments,
+                    project_name,
                 )
                 answer, html = results
                 with st.container():
