@@ -11,3 +11,38 @@ license: mit
 ---
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+
+# import GitHub issues
+
+## export from github
+first, generate token on: https://github.com/settings/tokens
+
+```
+$ git clone https://github.com/kazamori/github-api-tools 
+$ pip install -e ./github-api-tools 
+$ export GITHUB_API_TOKEN="********"
+$ gh-cli-issues --repository <org/repo>
+$ ls <repo>-issues.json
+```
+
+## import from json
+
+```
+$ python store.py -l github_issue <index> ../<repo>-issues.json 
+```
+
+# import Wiki Pages
+
+## export from somewhere
+
+create `pages.json` like:
+```json
+{"id": <page_id>, "title": <page title>, "content": <page body>, "ctime": ..., "user": <name>, "url": "https:..."}
+{"title": ...}
+```
+
+## import from json
+
+```
+$ python store.py -l wikipage <index> ../pages.json 
+```

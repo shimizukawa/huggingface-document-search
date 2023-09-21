@@ -1,6 +1,7 @@
 from time import time
 from datetime import datetime
 from typing import Iterable
+
 import streamlit as st
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
@@ -12,8 +13,9 @@ from qdrant_client.http.models import Filter, FieldCondition, MatchValue, Range
 from langchain.chains import RetrievalQA
 from openai.error import InvalidRequestError
 from langchain.chat_models import ChatOpenAI
+
 from config import DB_CONFIG
-from model import Doc
+from models import BaseModel
 
 
 @st.cache_resource
@@ -150,9 +152,9 @@ def _get_related_url(metadata) -> Iterable[str]:
 
 def _get_query_str_filter(
     query: str,
-    project_name: str,
+    index: str,
 ) -> tuple[str, Filter]:
-    options = [{"key": "metadata.project_name", "value": project_name}]
+    options = [{"key": "metadata.index", "value": index}]
     filter = make_filter_obj(options=options)
     return query, filter
 
@@ -160,10 +162,10 @@ def _get_query_str_filter(
 def run_qa(
     llm,
     query: str,
-    project_name: str,
+    index: str,
 ) -> tuple[str, str]:
     now = time()
-    query_str, filter = _get_query_str_filter(query, project_name)
+    query_str, filter = _get_query_str_filter(query, index)
     qa = get_retrieval_qa(filter, llm)
     try:
         result = qa(query_str)
@@ -178,29 +180,30 @@ def run_qa(
 
 def run_search(
     query: str,
-    project_name: str,
-) -> Iterable[tuple[Doc, float, str]]:
-    query_str, filter = _get_query_str_filter(query, project_name)
+    index: str,
+) -> Iterable[tuple[BaseModel, float, str]]:
+    query_str, filter = _get_query_str_filter(query, index)
     qdocs = get_similay(query_str, filter)
     for qdoc, score in qdocs:
         text = qdoc.page_content
         metadata = qdoc.metadata
         # print(metadata)
-        doc = Doc(
-            project_name=project_name,
+        data = BaseModel(
+            index=index,
             id=metadata.get("id"),
             title=metadata.get("title"),
             ctime=metadata.get("ctime"),
             user=metadata.get("user"),
             url=metadata.get("url"),
+            type=metadata.get("type"),
         )
-        yield doc, score, text
+        yield data, score, text
 
 
 with st.form("my_form"):
     st.title("Document Search")
     query = st.text_input(label="query")
-    project_name = st.text_input(label="project")
+    index = st.text_input(label="index")
 
     submit_col1, submit_col2 = st.columns(2)
     searched = submit_col1.form_submit_button("Search")
@@ -209,7 +212,7 @@ with st.form("my_form"):
         st.header("Search Results")
         st.divider()
         with st.spinner("Searching..."):
-            results = run_search(query, project_name)
+            results = run_search(query, index)
             for doc, score, text in results:
                 title = doc.title
                 url = doc.url
@@ -232,7 +235,7 @@ with st.form("my_form"):
             results = run_qa(
                 LLM,
                 query,
-                project_name,
+                index,
             )
             answer, html = results
             with st.container():
@@ -249,7 +252,7 @@ with st.form("my_form"):
                 results = run_qa(
                     VICUNA_LLM,
                     query,
-                    project_name,
+                    index,
                 )
                 answer, html = results
                 with st.container():

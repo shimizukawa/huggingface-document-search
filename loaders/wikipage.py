@@ -1,11 +1,13 @@
-from dataclasses import asdict
 import json
+from dataclasses import asdict
+from pathlib import Path
 from typing import Iterator
+
 from dateutil.parser import parse
 from langchain.docstore.document import Document
 from langchain.document_loaders.base import BaseLoader
 
-from model import Doc
+from models import WikiPage
 
 
 def date_to_int(dt_str: str) -> int:
@@ -13,20 +15,20 @@ def date_to_int(dt_str: str) -> int:
     return int(dt.timestamp())
 
 
-def get_contents(project_name: str, filename: str) -> Iterator[tuple[Doc, str]]:
+def get_contents(index: str, inputfile: Path) -> Iterator[tuple[WikiPage, str]]:
     """filename for file with ndjson
 
         {"id": <page_id>, "title": <page title>, "content": <page body>, "ctime": ..., "user": <name>, "url": "https:..."}
         {"title": ...}
     """
-    with open(filename, "r") as f:
+    with inputfile.open("r") as f:
         obj = [json.loads(line) for line in f]
     for data in obj:
         title = data["title"]
         body = data["content"]
         ctime = date_to_int(data["ctime"]) if isinstance(data["ctime"], str) else data["ctime"]
-        doc = Doc(
-            project_name=project_name,
+        doc = WikiPage(
+            index=index,
             id=data["id"],
             title=title,
             ctime=ctime,
@@ -39,13 +41,13 @@ def get_contents(project_name: str, filename: str) -> Iterator[tuple[Doc, str]]:
         yield doc, text
 
 
-class DocLoader(BaseLoader):
-    def __init__(self, project_name: str, filename: str):
-        self.project_name = project_name
-        self.filename = filename
+class WikiPageLoader(BaseLoader):
+    def __init__(self, index: str, inputfile: Path):
+        self.index = index
+        self.inputfile = inputfile
 
     def lazy_load(self) -> Iterator[Document]:
-        for doc, text in get_contents(self.project_name, self.filename):
+        for doc, text in get_contents(self.index, self.inputfile):
             metadata = asdict(doc)
             yield Document(page_content=text, metadata=metadata)
 

@@ -1,10 +1,14 @@
+import argparse
+from itertools import islice
+from pathlib import Path
+
 from tqdm import tqdm
 import torch
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.vectorstores import Qdrant
 
-from doc_loader import DocLoader
+from loaders import get_loader, LOADER_NAMES
 from config import DB_CONFIG
 
 
@@ -19,6 +23,16 @@ def get_text_chunk(docs):
     return texts
 
 
+def batched(iterable, *, size=100):
+    "Batch data into tuples of length n. The last batch may be shorter."
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if size < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while batch := tuple(islice(it, size)):
+        yield batch
+
+
 def store(texts):
     model_name = "intfloat/multilingual-e5-large"
     model_kwargs = {"device": "cuda:0" if torch.cuda.is_available() else "cpu"}
@@ -29,9 +43,9 @@ def store(texts):
         encode_kwargs=encode_kwargs,
     )
     db_url, db_api_key, db_collection_name = DB_CONFIG
-    for text in tqdm(texts):
+    for batch in tqdm(batched(texts, size=100)):
         _ = Qdrant.from_documents(
-            [text],
+            batch,
             embeddings,
             url=db_url,
             api_key=db_api_key,
@@ -39,24 +53,31 @@ def store(texts):
         )
 
 
-def main(project_name: str, path: str) -> None:
-    loader = DocLoader(project_name, path)
+def get_parser():
+    p = argparse.ArgumentParser()
+    p.add_argument("index", type=str)
+    p.add_argument("inputfile", metavar="INPUTFILE", type=argparse.FileType("rt"))
+    p.add_argument("-l", "--loader", type=str, choices=LOADER_NAMES, required=True)
+    return p
+
+
+def main():
+    """
+    $ python store.py --loader wikipage "index" "FILE_PATH"
+    $ python store.py -l wikipage wiki data/wiki.json
+    """
+    p = get_parser()
+    args = p.parse_args()
+    loader = get_loader(
+        args.loader,
+        index=args.index,
+        inputfile=Path(args.inputfile.name),
+    )
+
     docs = loader.load()
     texts = get_text_chunk(docs)
     store(texts)
 
 
 if __name__ == "__main__":
-    """
-    $ python store.py "PROJECT_NAME" "FILE_PATH"
-    $ python store.py hoge data/hoge-docs.json
-    """
-    import sys
-
-    args = sys.argv
-    if len(args) != 3:
-        print("No args, you need two args for project_name, json_file_path")
-    else:
-        project_name = args[1]
-        path = args[2]
-        main(project_name, path)
+    main()
