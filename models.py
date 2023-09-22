@@ -19,5 +19,5 @@ class GithubIssue(BaseModel):
 
 
 @dataclasses.dataclass(frozen=True)
-class WikiPage:
+class WikiPage(BaseModel):
     type: str = "wiki"
