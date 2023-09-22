@@ -1,7 +1,7 @@
 import dataclasses
 
 
-@dataclasses.dataclass()
+@dataclasses.dataclass(frozen=True)
 class BaseModel:
     index: str
     id: int
@@ -14,7 +14,7 @@ class BaseModel:
 
 @dataclasses.dataclass(frozen=True)
 class GithubIssue(BaseModel):
-    labels: list[str]
+    labels: list[str] = dataclasses.field(default_factory=list)
     type: str = "issue"
 
 
