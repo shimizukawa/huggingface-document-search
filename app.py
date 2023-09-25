@@ -1,5 +1,5 @@
-from time import time
 from datetime import datetime
+from time import time
 from typing import Iterable
 
 import streamlit as st
@@ -14,7 +14,7 @@ from langchain.chains import RetrievalQA
 from openai.error import InvalidRequestError
 from langchain.chat_models import ChatOpenAI
 
-from config import DB_CONFIG
+from config import DB_CONFIG, INDEX_KEYS
 from models import BaseModel
 
 
@@ -202,8 +202,8 @@ def run_search(
 
 with st.form("my_form"):
     st.title("Document Search")
-    query = st.text_input(label="query")
-    index = st.text_input(label="index")
+    query = st.text_area(label="query")
+    index = st.selectbox(label="index", options=INDEX_KEYS)
 
     submit_col1, submit_col2 = st.columns(2)
     searched = submit_col1.form_submit_button("Search")
@@ -226,12 +226,12 @@ with st.form("my_form"):
                     st.write(text)
                     st.write("score:", score, "Date:", ctime.date(), "User:", user)
                     st.divider()
-    qa_searched = submit_col2.form_submit_button("QA Search by OpenAI")
+    qa_searched = submit_col2.form_submit_button("Q&A by OpenAI")
     if qa_searched:
         st.divider()
-        st.header("QA Search Results by OpenAI GPT-3")
+        st.header("Answer by OpenAI GPT-3")
         st.divider()
-        with st.spinner("QA Searching..."):
+        with st.spinner("Thinking..."):
             results = run_qa(
                 LLM,
                 query,
@@ -243,12 +243,12 @@ with st.form("my_form"):
                 st.markdown(html, unsafe_allow_html=True)
                 st.divider()
     if torch.cuda.is_available():
-        qa_searched_vicuna = submit_col2.form_submit_button("QA Search by Vicuna")
+        qa_searched_vicuna = submit_col2.form_submit_button("Answer by Vicuna")
         if qa_searched_vicuna:
             st.divider()
-            st.header("QA Search Results by Vicuna-13b-v1.5")
+            st.header("Answer by Vicuna-13b-v1.5")
             st.divider()
-            with st.spinner("QA Searching..."):
+            with st.spinner("Thinking..."):
                 results = run_qa(
                     VICUNA_LLM,
                     query,

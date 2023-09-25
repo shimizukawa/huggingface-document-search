@@ -12,6 +12,13 @@ license: mit
 
 Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
 
+# Required Environment variables
+
+- `INDEX_KEYS`: comma separated index names
+- `QDRANT_URL`: Qdrant API endpoint
+- `QDRANT_API_KEY`: Qdrant API Key
+- `OPENAI_API_KEY`: OpenAI API Key
+
 # import GitHub issues
 
 ## export from github
