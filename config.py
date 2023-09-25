@@ -18,18 +18,18 @@ def get_local_db_congin():
     return url, None, collection_name
 
 
-def get_index_keys():
+def get_index_names():
     keys = [
         k for k in [
             k.strip().lower()
-            for k in os.environ["INDEX_KEYS"].split(",")
+            for k in os.environ["INDEX_NAMES"].split(",")
         ]
         if k
     ]
     if not keys:
-        keys = ["INDEX_KEYS is empty"]
+        keys = ["INDEX_NAMES is empty"]
     return keys
 
 
 DB_CONFIG = get_db_config() if SAAS else get_local_db_congin()
-INDEX_KEYS = get_index_keys()
+INDEX_NAMES = get_index_names()

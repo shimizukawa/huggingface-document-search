@@ -14,7 +14,7 @@ from langchain.chains import RetrievalQA
 from openai.error import InvalidRequestError
 from langchain.chat_models import ChatOpenAI
 
-from config import DB_CONFIG, INDEX_KEYS
+from config import DB_CONFIG, INDEX_NAMES
 from models import BaseModel
 
 
@@ -203,7 +203,7 @@ def run_search(
 with st.form("my_form"):
     st.title("Document Search")
     query = st.text_area(label="query")
-    index = st.selectbox(label="index", options=INDEX_KEYS)
+    index = st.selectbox(label="index", options=INDEX_NAMES)
 
     submit_col1, submit_col2 = st.columns(2)
     searched = submit_col1.form_submit_button("Search")

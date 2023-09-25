@@ -14,7 +14,7 @@ Check out the configuration reference at https://huggingface.co/docs/hub/spaces-
 
 # Required Environment variables
 
-- `INDEX_KEYS`: comma separated index names
+- `INDEX_NAMES`: comma separated index names
 - `QDRANT_URL`: Qdrant API endpoint
 - `QDRANT_API_KEY`: Qdrant API Key
 - `OPENAI_API_KEY`: OpenAI API Key
