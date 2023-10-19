@@ -59,12 +59,19 @@ class RTDHtmlPageLoader(ReadTheDocsLoader):
             with open(p, encoding=self.encoding, errors=self.errors) as f:
                 text, title = self._my_clean_data(f.read())
 
+            if p.name == "index.html":
+                # Djangoドキュメントではindex.htmlにアクセスすると404になる
+                p = p.parent
+                url = f"https://{str(p)}/"
+            else:
+                url = f"https://{str(p)}"
+
             metadata = {
                 "title": title,
                 "ctime": int(datetime.now().timestamp()),
                 "user": "rtd",
                 "type": "rtd",
-                "url": f"https://{str(p)}",
+                "url": url,
                 "id": str(p),
             }
             # print(metadata)
