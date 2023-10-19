@@ -56,7 +56,7 @@ def store(texts):
 def get_parser():
     p = argparse.ArgumentParser()
     p.add_argument("index", type=str)
-    p.add_argument("inputfile", metavar="INPUTFILE", type=argparse.FileType("rt"))
+    p.add_argument("inputfile", metavar="INPUTFILE", type=str)
     p.add_argument("-l", "--loader", type=str, choices=LOADER_NAMES, required=True)
     return p
 
@@ -65,13 +65,14 @@ def main():
     """
     $ python store.py --loader wikipage "index" "FILE_PATH"
     $ python store.py -l wikipage wiki data/wiki.json
+    $ python store.py -l rtdhtmlpage django ./docs.djangoproject.com/
     """
     p = get_parser()
     args = p.parse_args()
     loader = get_loader(
         args.loader,
         index=args.index,
-        inputfile=Path(args.inputfile.name),
+        inputfile=Path(args.inputfile),
     )
 
     docs = loader.load()

@@ -1,9 +1,11 @@
 from .wikipage import WikiPageLoader
 from .github_issue import GithubIssueLoader
+from .rtdhtmlpage import RTDHtmlPageLoader
 
 LOADERS = {
     "wikipage": WikiPageLoader,
-    "github_issue": GithubIssueLoader
+    "github_issue": GithubIssueLoader,
+    "rtdhtmlpage": RTDHtmlPageLoader,
 }
 LOADER_NAMES = tuple(LOADERS.keys())
 

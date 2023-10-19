@@ -10,3 +10,4 @@ streamlit
 python-dateutil
 openai
 tqdm
+beautifulsoup4

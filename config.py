@@ -22,7 +22,7 @@ def get_index_names():
     keys = [
         k for k in [
             k.strip().lower()
-            for k in os.environ["INDEX_NAMES"].split(",")
+            for k in os.environ.get("INDEX_NAMES", "").split(",")
         ]
         if k
     ]
