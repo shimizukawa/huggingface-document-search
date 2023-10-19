@@ -3,13 +3,13 @@ import dataclasses
 
 @dataclasses.dataclass(frozen=True)
 class BaseModel:
-    index: str
     id: int
     title: str
     ctime: int
     user: str
     url: str
     type: str
+    index: str = ""
 
 
 @dataclasses.dataclass(frozen=True)

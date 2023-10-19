@@ -15,14 +15,13 @@ def date_to_int(dt_str: str) -> int:
     return int(dt.timestamp())
 
 
-def get_contents(index: str, inputfile: Path) -> Iterator[tuple[GithubIssue, str]]:
+def get_contents(inputfile: Path) -> Iterator[tuple[GithubIssue, str]]:
     with inputfile.open("r") as f:
         obj = [json.loads(line) for line in f]
     for data in obj:
         title = data["title"]
         body = data["body"]
         issue = GithubIssue(
-            index=index,
             id=data["number"],
             title=title,
             ctime=date_to_int(data["created_at"]),
@@ -37,7 +36,6 @@ def get_contents(index: str, inputfile: Path) -> Iterator[tuple[GithubIssue, str
         comments = data["comments_"]
         for comment in comments:
             issue = GithubIssue(
-                index=index,
                 id=comment["id"],
                 title=data["title"],
                 ctime=date_to_int(comment["created_at"]),
@@ -50,12 +48,11 @@ def get_contents(index: str, inputfile: Path) -> Iterator[tuple[GithubIssue, str
 
 
 class GithubIssueLoader(BaseLoader):
-    def __init__(self, index: str, inputfile: Path):
-        self.index = index
+    def __init__(self, inputfile: Path):
         self.inputfile = inputfile
 
     def lazy_load(self) -> Iterator[Document]:
-        for issue, text in get_contents(self.index, self.inputfile):
+        for issue, text in get_contents(self.inputfile):
             metadata = asdict(issue)
             yield Document(page_content=text, metadata=metadata)
 

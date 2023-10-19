@@ -15,7 +15,7 @@ def date_to_int(dt_str: str) -> int:
     return int(dt.timestamp())
 
 
-def get_contents(index: str, inputfile: Path) -> Iterator[tuple[WikiPage, str]]:
+def get_contents(inputfile: Path) -> Iterator[tuple[WikiPage, str]]:
     """filename for file with ndjson
 
         {"id": <page_id>, "title": <page title>, "content": <page body>, "ctime": ..., "user": <name>, "url": "https:..."}
@@ -28,7 +28,6 @@ def get_contents(index: str, inputfile: Path) -> Iterator[tuple[WikiPage, str]]:
         body = data["content"]
         ctime = date_to_int(data["ctime"]) if isinstance(data["ctime"], str) else data["ctime"]
         doc = WikiPage(
-            index=index,
             id=data["id"],
             title=title,
             ctime=ctime,
@@ -42,12 +41,11 @@ def get_contents(index: str, inputfile: Path) -> Iterator[tuple[WikiPage, str]]:
 
 
 class WikiPageLoader(BaseLoader):
-    def __init__(self, index: str, inputfile: Path):
-        self.index = index
+    def __init__(self, inputfile: Path):
         self.inputfile = inputfile
 
     def lazy_load(self) -> Iterator[Document]:
-        for doc, text in get_contents(self.index, self.inputfile):
+        for doc, text in get_contents(self.inputfile):
             metadata = asdict(doc)
             yield Document(page_content=text, metadata=metadata)
 

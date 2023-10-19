@@ -61,6 +61,12 @@ def get_parser():
     return p
 
 
+def index_annotated_docs(docs, index):
+    for doc in docs:
+        doc.metadata["index"] = index
+        yield doc
+
+
 def main():
     """
     $ python store.py --loader wikipage "index" "FILE_PATH"
@@ -71,12 +77,11 @@ def main():
     args = p.parse_args()
     loader = get_loader(
         args.loader,
-        index=args.index,
         inputfile=Path(args.inputfile),
     )
 
-    docs = loader.load()
-    texts = get_text_chunk(docs)
+    docs = loader.lazy_load()
+    texts = get_text_chunk(index_annotated_docs(docs, args.index))
     store(texts)
 
 

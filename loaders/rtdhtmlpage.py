@@ -12,8 +12,7 @@ class RTDHtmlPageLoader(ReadTheDocsLoader):
     $ wget -r -np -A.html https://docs.djangoproject.com/en/4.2/
     $ python store.py -l rtdhtmlpage django ./docs.djangoproject.com/
     """
-    def __init__(self, index: str, inputfile: Path, *args, **kwargs):
-        self.index = index
+    def __init__(self, inputfile: Path, *args, **kwargs):
         kwargs["custom_html_tag"] = ("div", {"id": "docs-content"})
         super().__init__(inputfile, *args, **kwargs)
 
@@ -66,7 +65,6 @@ class RTDHtmlPageLoader(ReadTheDocsLoader):
                 "user": "rtd",
                 "type": "rtd",
                 "url": f"https://{str(p)}",
-                "index": self.index,
                 "id": str(p),
             }
             # print(metadata)
