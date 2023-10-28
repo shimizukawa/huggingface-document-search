@@ -203,7 +203,7 @@ def run_search(
         metadata = qdoc.metadata
         # print(metadata)
         data = BaseModel(
-            index=index,
+            index=metadata.get("index"),
             id=metadata.get("id"),
             title=metadata.get("title"),
             ctime=metadata.get("ctime"),
@@ -217,11 +217,18 @@ def run_search(
 with st.form("my_form"):
     st.title("Document Search")
     query = st.text_area(label="query")
-    index_list = st.multiselect(label="index", options=INDEX_NAMES)
+    index_list = st.multiselect(
+        label="index",
+        options=INDEX_NAMES,
+        default=INDEX_NAMES,
+        placeholder="Select index",
+    )
 
     submit_col1, submit_col2 = st.columns(2)
-    searched = submit_col1.form_submit_button("Search")
-    if searched:
+    searched = submit_col2.form_submit_button("Search")
+    if not index_list:
+        st.error("Please select at least one index.")
+    if searched and index_list:
         st.divider()
         st.header("Search Results")
         st.divider()
@@ -240,8 +247,8 @@ with st.form("my_form"):
                     st.write(text)
                     st.write("score:", score, "Date:", ctime.date(), "User:", user)
                     st.divider()
-    qa_searched = submit_col2.form_submit_button("Q&A by OpenAI")
-    if qa_searched:
+    qa_searched = submit_col1.form_submit_button("Q&A by OpenAI")
+    if qa_searched and index_list:
         st.divider()
         st.header("Answer by OpenAI GPT-3")
         st.divider()
@@ -256,8 +263,8 @@ with st.form("my_form"):
                 st.write(answer)
                 st.markdown(html, unsafe_allow_html=True)
                 st.divider()
-    if torch.cuda.is_available():
-        qa_searched_vicuna = submit_col2.form_submit_button("Answer by Vicuna")
+    if torch.cuda.is_available() and index_list:
+        qa_searched_vicuna = submit_col1.form_submit_button("Answer by Vicuna")
         if qa_searched_vicuna:
             st.divider()
             st.header("Answer by Vicuna-13b-v1.5")
