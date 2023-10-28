@@ -77,6 +77,18 @@ def _get_vicuna_llm(temperature=0.2) -> HuggingFacePipeline | None:
 VICUNA_LLM = _get_vicuna_llm()
 
 
+def make_index_filter_obj(index_list: list[str]):
+    should = []
+    for index in index_list:
+        should.append(
+            FieldCondition(
+                key="metadata.index", match=MatchValue(value=index)
+            )
+        )
+    filter = Filter(should=should)
+    return filter
+
+
 def make_filter_obj(options: list[dict[str]]):
     # print(options)
     must = []
@@ -152,20 +164,22 @@ def _get_related_url(metadata) -> Iterable[str]:
 
 def _get_query_str_filter(
     query: str,
-    index: str,
+    index_list: list[str],
 ) -> tuple[str, Filter]:
-    options = [{"key": "metadata.index", "value": index}]
-    filter = make_filter_obj(options=options)
+    # options = [{"key": "metadata.index", "value": index_list[0]}]
+    # filter = make_filter_obj(options=options)
+
+    filter = make_index_filter_obj(index_list)
     return query, filter
 
 
 def run_qa(
     llm,
     query: str,
-    index: str,
+    index_list: list[str],
 ) -> tuple[str, str]:
     now = time()
-    query_str, filter = _get_query_str_filter(query, index)
+    query_str, filter = _get_query_str_filter(query, index_list)
     qa = get_retrieval_qa(filter, llm)
     try:
         result = qa(query_str)
@@ -180,9 +194,9 @@ def run_qa(
 
 def run_search(
     query: str,
-    index: str,
+    index_list: list[str],
 ) -> Iterable[tuple[BaseModel, float, str]]:
-    query_str, filter = _get_query_str_filter(query, index)
+    query_str, filter = _get_query_str_filter(query, index_list)
     qdocs = get_similay(query_str, filter)
     for qdoc, score in qdocs:
         text = qdoc.page_content
@@ -203,7 +217,7 @@ def run_search(
 with st.form("my_form"):
     st.title("Document Search")
     query = st.text_area(label="query")
-    index = st.selectbox(label="index", options=INDEX_NAMES)
+    index_list = st.multiselect(label="index", options=INDEX_NAMES)
 
     submit_col1, submit_col2 = st.columns(2)
     searched = submit_col1.form_submit_button("Search")
@@ -212,7 +226,7 @@ with st.form("my_form"):
         st.header("Search Results")
         st.divider()
         with st.spinner("Searching..."):
-            results = run_search(query, index)
+            results = run_search(query, index_list)
             for doc, score, text in results:
                 title = doc.title
                 url = doc.url
@@ -235,7 +249,7 @@ with st.form("my_form"):
             results = run_qa(
                 LLM,
                 query,
-                index,
+                index_list,
             )
             answer, html = results
             with st.container():
@@ -252,7 +266,7 @@ with st.form("my_form"):
                 results = run_qa(
                     VICUNA_LLM,
                     query,
-                    index,
+                    index_list,
                 )
                 answer, html = results
                 with st.container():
