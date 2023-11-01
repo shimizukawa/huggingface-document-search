@@ -242,7 +242,7 @@ with st.form("my_form"):
                 ctime = datetime.fromtimestamp(doc.ctime)
                 user = doc.user
                 with st.container():
-                    st.subheader(f"#{id_} - {title}")
+                    st.subheader(title)
                     st.write(url)
                     st.write(text)
                     st.write("score:", score, "Date:", ctime.date(), "User:", user)
