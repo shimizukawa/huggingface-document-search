@@ -56,10 +56,12 @@ class RTDHtmlPageLoader(ReadTheDocsLoader):
         for p in self.file_path.rglob("*"):
             if p.is_dir():
                 continue
+            # FIXME: utf-8を指定したい
+            # with open(p, encoding='utf-8', errors='ignore') as f:
             with open(p, encoding=self.encoding, errors=self.errors) as f:
                 text, title = self._my_clean_data(f.read())
 
-            if p.name == "index.html":
+            if "docs.djangoproject.com" in p.parts and p.name == "index.html":
                 # Djangoドキュメントではindex.htmlにアクセスすると404になる
                 p = p.parent
                 url = f"https://{str(p)}/"
