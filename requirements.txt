@@ -8,6 +8,6 @@ bitsandbytes
 sentence_transformers
 streamlit
 python-dateutil
-openai
+openai<1.0
 tqdm
 beautifulsoup4
