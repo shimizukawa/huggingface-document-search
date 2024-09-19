@@ -32,7 +32,7 @@ def load_embeddings():
 
 
 @st.cache_resource
-def llm_model(model="gpt-3.5-turbo", temperature=0.2):
+def llm_model(model="gpt-4o-mini", temperature=0.2):
     llm = ChatOpenAI(model=model, temperature=temperature)
     return llm
 
@@ -250,7 +250,7 @@ with st.form("my_form"):
     qa_searched = submit_col1.form_submit_button("Q&A by OpenAI")
     if qa_searched and index_list:
         st.divider()
-        st.header("Answer by OpenAI GPT-3")
+        st.header("Answer by OpenAI GPT-4o mini")
         st.divider()
         with st.spinner("Thinking..."):
             results = run_qa(
